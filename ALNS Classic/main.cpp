@@ -11,7 +11,7 @@ int main(int, char**) {
         std::cout << "    ALNS - VEHICLE ROUTING PROBLEM (VRPTW)\n";
         std::cout << "==========================================\n";
 
-        std::string instance_file = "..\\solomon-100\\RC2\\rc208.txt";
+        std::string instance_file = "..\\solomon-100\\R1\\r101.txt";
         std::cout << "[1] Cargando instancia: " << instance_file << "...\n";
         Instance inst(instance_file);
         std::cout << "    -> Nodos cargados: " << inst.clients.size() << "\n";
