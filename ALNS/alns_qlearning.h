@@ -4,8 +4,11 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
 #include <random> // Asegúrate de incluir esto si usas generadores aleatorios como std::mt19937 en tu .cpp
-#include "operators.h"
+#include "../Operators/operators.h"
 
 struct IterationData {
     int iter;

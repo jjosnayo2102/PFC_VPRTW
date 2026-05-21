@@ -1,7 +1,7 @@
 #include <vector>
 #include <functional>
 #include <string>
-#include "operators.h"
+#include "../Operators/operators.h"
 
 // Para guardar metricas de analisis
 struct IterationData {

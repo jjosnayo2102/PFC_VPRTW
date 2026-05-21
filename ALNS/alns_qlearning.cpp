@@ -1,12 +1,4 @@
 #include "alns_qlearning.h"
-#include <cmath>
-#include <algorithm>
-#include <numeric>
-
-double cost(const Solution& sol) {
-    const double VEHICLE_COST = 10000.0;
-    return (sol.used_vehicles * VEHICLE_COST) + sol.total_distance;
-}
 
 ALNS_QLearning::ALNS_QLearning(const Instance& _inst, const Solution& _initial_sol) 
     : inst(_inst), current_sol(_initial_sol), best_sol(_initial_sol) {
