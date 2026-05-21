@@ -42,14 +42,14 @@ int main(int, char**) {
         auto start_time = std::chrono::high_resolution_clock::now();
         
         // Elige uno
-        //Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations);
-        Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations);
+        Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations);
+        //Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations);
 
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end_time - start_time;
 
         std::cout << "\n==========================================\n";
-        std::cout << "             BÚSQUEDA TERMINADA\n";
+        std::cout << "             BUSQUEDA TERMINADA\n";
         std::cout << "==========================================\n";
         std::cout << best_solution;
         std::cout << "------------------------------------------\n";
