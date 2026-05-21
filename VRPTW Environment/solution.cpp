@@ -6,13 +6,15 @@ std::ostream& operator<<(std::ostream& os, const Solution& s){
 
     int r = 0;
     for (const Route& route : s.routes) {
-        os << "Ruta [" << r << "]: ";
-        for (const int& i : route.path) {
-            if (i != 0)
-                os << i << " ";
+        if (route.path.size() > 2) {
+            os << "Ruta [" << r << "]: ";
+            for (const int& i : route.path) {
+                if (i != 0)
+                    os << i << " ";
+            }
+            os << "\n";
+            r++;
         }
-        os << "\n";
-        r++;
     }
 
     return os;

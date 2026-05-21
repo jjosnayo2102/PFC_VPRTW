@@ -3,24 +3,9 @@
 #include <random>
 #include "ALNS/alns.h"
 #include "ALNS/alns_qlearning.h"
+#include "utils.h"
 
 std::mt19937 rng;
-
-Solution solve_with_classic(const Instance& inst, const Solution& sol, int max_iters) {
-    std::cout << "[3] Iniciando ALNS por " << max_iters << " iteraciones...\n";
-    ALNS solver(inst, sol);
-    Solution best_solution = solver.solve(max_iters);
-    solver.exportMetrics("..\\Results\\alns_metrics.csv");
-    return best_solution;
-}
-
-Solution solve_with_qlearning(const Instance& inst, const Solution& sol, int max_iters) {
-    std::cout << "[3] Iniciando ALNS con Q-Learning por " << max_iters << " iteraciones...\n";
-    ALNS_QLearning solver(inst, sol);
-    Solution best_solution = solver.solve(max_iters);
-    solver.exportMetrics("..\\Results\\alns_qlearning_metrics.csv");
-    return best_solution;
-}
 
 int main(int, char**) {
     try {
@@ -28,7 +13,7 @@ int main(int, char**) {
         std::cout << "    ALNS - VEHICLE ROUTING PROBLEM (VRPTW)\n";
         std::cout << "==========================================\n";
 
-        std::string instance_file = "..\\solomon-100\\R1\\r101.txt";
+        std::string instance_file = "..\\solomon-100\\c2\\c201.txt";
         std::cout << "[1] Cargando instancia: " << instance_file << "...\n";
         Instance inst(instance_file);
         std::cout << "    -> Nodos cargados: " << inst.clients.size() << "\n";
