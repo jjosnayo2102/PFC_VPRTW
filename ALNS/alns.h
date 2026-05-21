@@ -1,3 +1,6 @@
+#ifndef ALNS_H
+#define ALNS_H
+
 #include <vector>
 #include <functional>
 #include <string>
@@ -60,3 +63,5 @@ class ALNS {
         bool accept(const Solution& candidate, double current_temp);
         void updateWeights(int used_destroy_idx, int used_repair_idx, double score);
 };
+
+#endif //ALNS_H

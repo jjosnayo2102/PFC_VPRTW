@@ -1,5 +1,11 @@
+#ifndef OPERATORS_H
+#define OPERATORS_H
+
 #include <algorithm>
-#include "../VRPTW Environment/vrptw.h"
+#include <cmath>
+#include <vector>
+#include <random>
+#include "../VRPTW Environment/solution.h"
 
 struct RemovalCandidate {
     int route_idx;
@@ -31,3 +37,5 @@ void greedyInsertion(Solution& sol);
 void regret2Insertion(Solution& sol);
 void regret3Insertion(Solution& sol);
 void pGreedyInsertion(Solution& sol, double eta = 0.2);
+
+#endif //OPERATORS_H

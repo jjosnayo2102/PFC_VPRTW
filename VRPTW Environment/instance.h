@@ -1,17 +1,19 @@
-#include <iostream>
-#include <vector>
-#include <random>
-#include <fstream>
-#include <stdexcept>
-#include <cmath>
-#include <limits>
+#ifndef INSTANCE_H
+#define INSTANCE_H
+
 #include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <random>
+#include <stdexcept>
+#include <vector>
 
 extern std::mt19937 rng;
 
 const int N_NODES = 101; // 100 clientes + deposito (0)
 const int N_VEHICLES = 25;
 
+// Struct del cliente
 struct Client {
     int id;
     double x;
@@ -27,6 +29,7 @@ struct Client {
 
 class Instance;
 
+// Struct de ruta / vehiculo
 struct Route {
     std::vector<int> path;
     double load = 0.0;
@@ -49,6 +52,7 @@ struct Route {
     void recalculate(const Instance& inst);
 };
 
+// Clase de la instancia
 class Instance {
     public:
         int capacity;
@@ -70,28 +74,4 @@ class Instance {
         void precomputeFeasibility();
 };
 
-class Solution {
-    public:
-        const Instance& inst;
-        std::vector<Route> routes;
-        std::vector<int> unassigned;
-
-        // Funcion objetivo f_1 y f_2
-        int used_vehicles = 0;
-        double total_distance = 0.0;
-
-        Solution(const Instance& _inst) : inst(_inst) {
-            generateInitialSolution();
-        }
-
-        friend std::ostream& operator<<(std::ostream& os, const Solution& s);
-        bool operator<(const Solution& other) const;
-        Solution& operator=(const Solution& other);
-
-        void updateMetrics();
-
-    private:
-        void generateInitialSolution();
-};
-
-double cost(const Solution& sol);
+#endif //INSTANCE_H

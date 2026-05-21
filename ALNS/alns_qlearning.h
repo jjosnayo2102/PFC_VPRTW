@@ -10,7 +10,7 @@
 #include <random> // Asegúrate de incluir esto si usas generadores aleatorios como std::mt19937 en tu .cpp
 #include "../Operators/operators.h"
 
-struct IterationData {
+struct IterationDataQL {
     int iter;
     int best_vehicles;
     double best_distance;
@@ -40,7 +40,7 @@ class ALNS_QLearning {
         Solution current_sol;
         Solution best_sol;
 
-        std::vector<IterationData> history;
+        std::vector<IterationDataQL> history;
 
         std::vector<DestroyOp> destroy_ops;
         std::vector<RepairOp> repair_ops;

@@ -1,106 +1,6 @@
-#include "vrptw.h"
+#include "solution.h"
 
-void Route::recalculate(const Instance& inst) {
-    load = 0.0;
-    distance = 0.0;
-    int L = path.size();
-
-    arrival_times.resize(L, 0.0);
-    wait_times.resize(L, 0.0);
-    time_slacks.resize(L, 0.0);
-
-    arrival_times[0] = 0.0;
-    wait_times[0] = 0.0;
-    double current_time = 0.0;
-    
-    for (size_t i = 0; i < L - 1; ++i) {
-        int curr = path[i];
-        int next = path[i+1];
-
-        distance += inst.dist_mat[curr][next];
-        load += inst.clients[curr].demand;
-
-        double start_service = std::max(current_time, inst.clients[curr].ready_time);
-        double arrival_at_next= start_service + inst.clients[curr].service_time + inst.dist_mat[curr][next];
-
-        arrival_times[i + 1] = arrival_at_next;
-        wait_times[i + 1] = std::max(0.0, inst.clients[next].ready_time - arrival_at_next);
-        current_time = arrival_at_next;
-    }
-
-    load -= inst.clients[0].demand;
-
-    int last = path[L - 1];
-    double start_service_last = std::max(arrival_times[L - 1], inst.clients[last].ready_time);
-    time_slacks[L - 1] = inst.clients[last].due_date - start_service_last;
-
-    for (int i = L - 2; i >= 0; --i) {
-        int node = path[i];
-        double start_service = std::max(arrival_times[i], inst.clients[node].ready_time);
-        double local_slack = inst.clients[node].due_date - start_service;
-
-        time_slacks[i] = std::min(local_slack, time_slacks[i+1] + wait_times[i+1]);
-    }
-}   
-
-void Instance::loadSolomon(const std::string& path) {
-    std::ifstream file(path);
-
-    if (!file.is_open())
-        throw std::runtime_error("No se puede abrir " + path);
-
-    std::string dummy;
-    while (file >> dummy && dummy != "CAPACITY") {}
-
-    int num_vehicles;
-    file >> num_vehicles >> capacity;
-
-    while (file >> dummy && dummy != "SERVICE") {}
-    file >> dummy;
-
-    for (int i = 0; i < N_NODES; ++i) {
-        int id;
-        double x, y, demand, ready_time, due_date, service_time;
-
-        file >> id >> x >> y >> demand >> ready_time >> due_date >> service_time;
-        clients.emplace_back(id, x, y, demand, ready_time, due_date, service_time);
-    }
-
-    file.close();
-}
-
-void Instance::precomputeDistances() {
-    for (int i = 0; i < N_NODES; ++i) {
-        for (int j = 0; j < N_NODES; ++j) {
-            if (i == j)
-                dist_mat[i][j] = 0.0;
-            else {
-                double dx = clients[i].x - clients[j].x;
-                double dy = clients[i].y - clients[j].y;
-                dist_mat[i][j] = std::sqrt(dx * dx + dy * dy);
-            }
-        }
-    }
-}
-
-void Instance::precomputeFeasibility() {
-    for (int i = 0; i < N_NODES; ++i) {
-        for (int j = 0; j < N_NODES; ++j) {
-            if (i == j) {
-                is_reachable[i][j] = false;
-                continue;
-            }
-
-            double earliest_arrival_at_j = clients[i].ready_time + clients[i].service_time + dist_mat[i][j];
-
-            if (earliest_arrival_at_j > clients[j].due_date)
-                is_reachable[i][j] = false;
-            else
-                is_reachable[i][j] = true;
-        }
-    }
-}
-
+// Para imprimir soluciones
 std::ostream& operator<<(std::ostream& os, const Solution& s){
     os << "Vehiculos usados: " << s.used_vehicles << "  - Distancia total: " << s.total_distance << "\n";
 
@@ -118,6 +18,7 @@ std::ostream& operator<<(std::ostream& os, const Solution& s){
     return os;
 }
 
+// Comparador de soluciones (jerarquia de objetivos)
 bool Solution::operator<(const Solution& other) const {
     if (this->used_vehicles < other.used_vehicles) return true;
     if (this->used_vehicles > other.used_vehicles) return false;
@@ -125,6 +26,7 @@ bool Solution::operator<(const Solution& other) const {
     return this->total_distance < other.total_distance;
 }
 
+// Operador copia para soluciones
 Solution& Solution::operator=(const Solution& other) {
     if (this == &other) return *this;
 
@@ -136,6 +38,7 @@ Solution& Solution::operator=(const Solution& other) {
     return *this;
 }
 
+// Actualizar metricas objetivo
 void Solution::updateMetrics() {
     used_vehicles = 0;
     total_distance = 0.0;
@@ -148,6 +51,7 @@ void Solution::updateMetrics() {
     }
 }
 
+// Generar solucion inicial (NN-Based)
 void Solution::generateInitialSolution() {
     std::vector<bool> visited(N_NODES, false);
     visited[0] = true;
@@ -214,6 +118,7 @@ void Solution::generateInitialSolution() {
     updateMetrics();
 }
 
+// Calcular costos de solucion
 double cost(const Solution& sol) {
     const double VEHICLE_COST = 10000.0;
     return (sol.used_vehicles * VEHICLE_COST) + sol.total_distance;

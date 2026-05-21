@@ -132,7 +132,7 @@ Solution ALNS_QLearning::solve(int max_iters) {
         current_state = next_state;
 
         // Guardando metricas (pasamos las probabilidades softmax para visualizar la toma de decisiones)
-        IterationData data;
+        IterationDataQL data;
         data.iter = iter;
         data.best_vehicles = best_sol.used_vehicles;
         data.best_distance = best_sol.total_distance;
