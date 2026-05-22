@@ -66,8 +66,8 @@ int minitest(const std::string& instance_file) {
         auto start_time = std::chrono::high_resolution_clock::now();
         
         // Elige uno
-        // Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "");
-        Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "");
+        Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "");
+        //Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "");
 
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end_time - start_time;
@@ -97,6 +97,8 @@ int minitest(const std::string& instance_file) {
 
         std::cout << "\n=== OPTIMO GLOBAL ENCONTRADO ===\n";
         std::cout << best_sol;
+
+        verifySolution(inst, best_sol);
 
     } catch (const std::exception& e) {
         std::cerr << "ERROR FATAL: " << e.what() << "\n";
