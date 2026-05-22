@@ -13,7 +13,7 @@ int test_benchmark() {
         std::cout << "    ALNS - VEHICLE ROUTING PROBLEM (VRPTW)\n";
         std::cout << "==========================================\n";
 
-        std::string instance_file = "..\\solomon-100\\c2\\c201.txt";
+        std::string instance_file = "..\\solomon-100\\RC2\\rc201.txt";
         std::cout << "[1] Cargando instancia: " << instance_file << "...\n";
         Instance inst(instance_file);
         std::cout << "    -> Nodos cargados: " << inst.clients.size() << "\n";
@@ -28,7 +28,7 @@ int test_benchmark() {
     
         // Elige uno
         Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "..\\Results\\alns_metrics.csv");
-        //Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "..\\Results\\alns_qlearning_metrics.csv");
+        // Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "..\\Results\\alns_qlearning_metrics.csv");
 
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end_time - start_time;
@@ -66,7 +66,7 @@ int minitest(const std::string& instance_file) {
         auto start_time = std::chrono::high_resolution_clock::now();
         
         // Elige uno
-        //Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "");
+        // Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "");
         Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "");
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -107,6 +107,5 @@ int minitest(const std::string& instance_file) {
 
 int main(int, char**) {
     test_benchmark();
-
     return 0;
 }
