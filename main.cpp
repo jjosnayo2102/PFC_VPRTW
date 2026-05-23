@@ -27,8 +27,8 @@ int test_benchmark() {
         auto start_time = std::chrono::high_resolution_clock::now();
     
         // Elige uno
-        Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "..\\Results\\alns_metrics.csv");
-        // Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "..\\Results\\alns_qlearning_metrics.csv");
+        // Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "..\\Results\\alns_metrics.csv");
+        Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "..\\Results\\alns_qlearning_metrics.csv");
 
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end_time - start_time;
