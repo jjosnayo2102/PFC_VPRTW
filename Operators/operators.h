@@ -31,6 +31,7 @@ void randomRemoval(Solution& sol, int q);
 void routeRemoval(Solution& sol, int q);
 void worstRemoval(Solution& sol, int q, double p = 3.0);
 void shawRemoval(Solution& sol, int q, double p = 3.0);
+void timeWindowRemoval(Solution& sol, int q, double p = 3.0);
 
 // Operadores de repair
 void greedyInsertion(Solution& sol);

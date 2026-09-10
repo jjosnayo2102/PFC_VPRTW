@@ -192,3 +192,84 @@ void shawRemoval(Solution& sol, int q, double p){
 
     sol.updateMetrics();
 }
+
+// Eliminamos clientes más parecidos respecto a su ventana de tiempo
+void timeWindowRemoval(Solution& sol, int q, double p){
+    const double w_dist = 5.0;
+    const double w_time = 6.0;
+    const double w_demand = 2.0;
+
+    int N = sol.inst.clients.size();
+    int removed = 0;
+    std::vector<int> removed_clients;
+
+    std::vector<int> active_routes;
+    for (int i = 0; i < sol.routes.size(); ++i)
+        if (sol.routes[i].path.size() > 2)
+            active_routes.push_back(i);
+    
+    if (active_routes.empty()) return;
+
+    std::uniform_int_distribution<int> r_distr(0, active_routes.size() - 1);
+    int first_r_idx = active_routes[r_distr(rng)];
+    Route& first_route = sol.routes[first_r_idx];
+
+    std::uniform_int_distribution<int> c_distr(1, first_route.path.size() - 2);
+    int first_c_idx = c_distr(rng);
+    int first_client = first_route.path[first_c_idx];
+
+    removed_clients.push_back(first_client);
+    sol.unassigned.push_back(first_client);
+    first_route.path.erase(first_route.path.begin() + first_c_idx);
+    first_route.recalculate(sol.inst);
+    removed++;
+
+    while (removed < q && sol.unassigned.size() < N - 1) {
+        std::uniform_int_distribution<int> base_distr(0, removed_clients.size() - 1);
+        int base_client_id = removed_clients[base_distr(rng)];
+        const Client& base_client = sol.inst.clients[base_client_id];
+
+        std::vector<RelatednessCandidate> candidates;
+        for (int r = 0; r < sol.routes.size(); ++r) {
+            Route& route = sol.routes[r];
+            if (route.path.size() <= 2) continue;
+
+            for (int i = 1; i < route.path.size() - 1; ++i) {
+                int target_id = route.path[i];
+                const Client& target_client = sol.inst.clients[target_id];
+
+                double r_score = 
+                    (w_dist * sol.inst.dist_mat[base_client_id][target_id]) +
+                    (w_time * std::abs(base_client.ready_time - target_client.ready_time)) +
+                    (w_demand * std::abs(base_client.demand - target_client.demand));
+                
+                candidates.push_back({r, i, target_id, r_score});
+            }
+        }
+
+        if (candidates.empty()) break;
+
+        std::sort(candidates.begin(), candidates.end(),
+            [](const RelatednessCandidate& a, const RelatednessCandidate& b) {
+                return a.relatedness < b.relatedness;
+            });
+        
+        std::uniform_real_distribution<double> y_distr(0.0, 1.0);
+        double y = y_distr(rng);
+
+        int chosen_idx = static_cast<int>(std::pow(y, p) * candidates.size());
+        if (chosen_idx >= candidates.size())
+            chosen_idx = candidates.size() - 1;
+        
+        RelatednessCandidate chosen = candidates[chosen_idx];
+        Route& target_route = sol.routes[chosen.route_idx];
+
+        removed_clients.push_back(chosen.client_id);
+        sol.unassigned.push_back(chosen.client_id);
+        target_route.path.erase(target_route.path.begin() + chosen.node_idx);
+        target_route.recalculate(sol.inst);
+        removed++;
+    }
+
+    sol.updateMetrics();
+}
