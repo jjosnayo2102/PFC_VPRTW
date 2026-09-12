@@ -55,7 +55,7 @@ class ALNS_QLearning {
         std::vector<std::vector<double>> Q_repair_best;
 
         void initOps();
-        bool accept(double cand_cost, double curr_cost, double current_temp);
+        bool accept(double cand_cost, double curr_cost, double current_temp, int current_state);
 
         std::vector<double> getSoftmaxProbabilities(const std::vector<double>& q_values, double tau);
         int selectOp(const std::vector<double>& probs);

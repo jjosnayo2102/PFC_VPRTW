@@ -46,10 +46,24 @@ int ALNS_QLearning::selectOp(const std::vector<double>& probs) {
     return distr(rng);
 }
 
-bool ALNS_QLearning::accept(double cand_cost, double curr_cost, double T) {
+bool ALNS_QLearning::accept(double cand_cost, double curr_cost, double T, int current_state) {
     double delta = cand_cost - curr_cost;
     if (delta <= 0) return true;
+    
     double prob = std::exp(-delta / T);
+    
+    // Si la diferencia es muy alta (ej. >= 9000), implica que se agregó un vehículo extra.
+    // El SA normal da prob ~ 0. Aquí damos una pequeña probabilidad para escapar de mínimos locales en R1/R2.
+    if (delta >= 9000.0) {
+        if (current_state == 2) {
+            prob = 0.02; // 2% de probabilidad de sacrificar un vehículo temporalmente para explorar
+        } else if (current_state == 1) {
+            prob = 0.005; // 0.5% si está estancado
+        } else {
+            prob = 0.0; // Nunca si está mejorando
+        }
+    }
+    
     std::uniform_real_distribution<double> distr(0.0, 1.0);
     return distr(rng) < prob; 
 }
@@ -77,6 +91,15 @@ Solution ALNS_QLearning::solve(int max_iters) {
         Solution candidate = current_sol;
         int q = q_distr(rng);
         
+        // Aumentar la destrucción si estamos estancados o atrapados (especial para R1/R2)
+        if (current_state == 2) {
+            std::uniform_int_distribution<int> deep_distr(q_max, std::max(q_max + 1, static_cast<int>(0.6 * n_customers)));
+            q = deep_distr(rng);
+        } else if (current_state == 1) {
+            std::uniform_int_distribution<int> deep_distr(q_min, std::max(q_min + 1, static_cast<int>(0.5 * n_customers)));
+            q = deep_distr(rng);
+        }
+        
         std::vector<double> d_probs = getSoftmaxProbabilities(Q_destroy[current_state], tau);
         std::vector<double> r_probs = getSoftmaxProbabilities(Q_repair[current_state], tau);
         
@@ -94,20 +117,32 @@ Solution ALNS_QLearning::solve(int max_iters) {
         double best_cost = cost(best_sol);
 
         if (cand_cost < best_cost) {
+            if (candidate.used_vehicles < best_sol.used_vehicles) {
+                reward = w1 * 10.0; 
+            } else {
+                reward = w1; 
+            }
             best_sol = candidate;
             current_sol = candidate;
-            reward = w1; 
             global_improved = true;
             Q_destroy_best = Q_destroy;
             Q_repair_best = Q_repair;
         }
         else if (cand_cost < curr_cost) {
+            if (candidate.used_vehicles < current_sol.used_vehicles) {
+                reward = w2 * 5.0; 
+            } else {
+                reward = w2; 
+            }
             current_sol = candidate;
-            reward = w2; 
         }
-        else if (accept(cand_cost, curr_cost, T)) { 
+        else if (accept(cand_cost, curr_cost, T, current_state)) { 
+            if (candidate.used_vehicles > current_sol.used_vehicles) {
+                reward = w4; 
+            } else {
+                reward = w3; 
+            }
             current_sol = candidate;
-            reward = w3; 
         }
 
         if (global_improved || cand_cost < curr_cost) {

@@ -30,8 +30,8 @@ int test_benchmark() {
         auto start_time = std::chrono::high_resolution_clock::now();
     
         // Elige uno
-        Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "../Results/alns_metrics.csv");
-        // Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "../Results/alns_qlearning_metrics.csv");
+        // Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations, "../Results/alns_metrics.csv");
+        Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations, "../Results/alns_qlearning_metrics.csv");
 
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end_time - start_time;
@@ -133,14 +133,17 @@ int main(int argc, char** argv) {
             std::string metrics_file = "../Results/" + algorithm + "/metrics/" + algorithm + "_" + inst_name + "_metrics_run" + run_id + ".csv";
             std::string routes_file = "../Results/" + algorithm + "/routes/" + algorithm + "_" + inst_name + "_metrics_run" + run_id + ".csv";
 
+            Solution best_solution(inst);
             if (algorithm == "CLASSIC")
-                solve_with_classic(inst, initial_sol, max_iters, metrics_file, routes_file);
+                best_solution = solve_with_classic(inst, initial_sol, max_iters, metrics_file, routes_file);
             else if (algorithm == "QLEARNING")
-                solve_with_qlearning(inst, initial_sol, max_iters, metrics_file, routes_file);
+                best_solution = solve_with_qlearning(inst, initial_sol, max_iters, metrics_file, routes_file);
             else {
                 std::cerr << "Algoritmo desconocido: " << algorithm << "\n";
                 return 1;
             }
+            std::cout << "[FINAL_RESULT] Veh: " << best_solution.used_vehicles << ", Dist: " << best_solution.total_distance << "\n";
+
         } catch (const std::exception& e) {
             std::cerr << "ERROR FATAL: " << e.what() << "\n";
             return 1;
