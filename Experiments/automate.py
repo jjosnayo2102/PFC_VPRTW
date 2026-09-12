@@ -7,7 +7,7 @@ import re
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-EXEC_PATH = "../build/Release/ALNS_VRPTW.exe"
+EXEC_PATH = "../build/ALNS_VRPTW.exe"
 BENCHMARK_DIR = "../solomon-100"
 SINTEF_CSV = "sintef.csv"
 

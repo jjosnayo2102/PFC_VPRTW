@@ -24,6 +24,7 @@ void manual_run() {
 
     Instance inst(instance_file);
     Solution initial_sol(inst);
+    std::cout << "[INFO] Solucion Inicial generada:\n" << initial_sol << "\n";
     Solution best_solution(inst);
 
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -91,6 +92,7 @@ int main(int argc, char** argv) {
 
         Instance inst(instance_file);
         Solution initial_sol(inst);
+        std::cout << "[INFO] Solucion Inicial generada:\n" << initial_sol << "\n";
         Solution best_solution(inst);
         auto start_time = std::chrono::high_resolution_clock::now();
 

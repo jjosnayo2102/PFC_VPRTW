@@ -15,9 +15,9 @@ add_executable(ALNS_VRPTW
                Utils/utils.cpp)
 
 if (MSVC)
-    target_compile_options(ALNS_VRPTW PRIVATE "$<$<CONFIG:Release>:/O2>")
+    target_compile_options(ALNS_VRPTW PRIVATE "/O2")
 else()
-    target_compile_options(ALNS_VRPTW PRIVATE "$<$<CONFIG:Release>:-O3>")
+    target_compile_options(ALNS_VRPTW PRIVATE "-O3")
 endif()
 
 include(CTest)
