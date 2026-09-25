@@ -62,7 +62,7 @@ int test_benchmark() {
     
         // Elige uno
         Solution best_solution = solve_with_classic(inst, initial_sol, max_iterations);
-        // Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iterations);
+        // Solution best_solution = solve_with_qlearning(inst, initial_sol, max_iters);
 
         double cpu_time_used = get_cpu_time() - start_cpu_time;
 
@@ -108,16 +108,26 @@ int main(int argc, char** argv) {
             
             double start_cpu = get_cpu_time();
 
-            if (algorithm == "CLASSIC")
-                solve_with_classic(inst, initial_sol, max_iters, metrics_file, routes_file);
-            else if (algorithm == "QLEARNING")
-                solve_with_qlearning(inst, initial_sol, max_iters, metrics_file, routes_file);
+            // Declaramos la variable para almacenar la mejor solucion retornada
+            Solution best_solution = initial_sol;
+
+            if (algorithm == "CLASSIC") {
+                best_solution = solve_with_classic(inst, initial_sol, max_iters, metrics_file, routes_file);
+            }
+            else if (algorithm == "QLEARNING") {
+                best_solution = solve_with_qlearning(inst, initial_sol, max_iters, metrics_file, routes_file);
+            }
             else {
                 std::cerr << "Algoritmo desconocido: " << algorithm << "\n";
                 return 1;
             }
 
             double cpu_time_used = get_cpu_time() - start_cpu;
+            
+            // Imprimir el resultado en el formato exacto que espera la expresion regular en Python
+            std::cout << "[FINAL_RESULT] Veh: " << best_solution.used_vehicles 
+                      << ", Dist: " << best_solution.total_distance << "\n";
+
             std::cout << "[INFO] Seed: " << seed << "\n";
             std::cout << "Tiempo de CPU real: " << cpu_time_used << " segundos\n";
 
