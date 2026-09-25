@@ -99,8 +99,16 @@ void ALNS::updateWeightsSegment() {
 }
 
 Solution ALNS::solve(int max_iters) {
+    // La construccion NN puede dejar clientes sin asignar; si arrancamos con
+    // best_sol incompleta, cost() la ve mas barata de lo que es (no penaliza
+    // unassigned) y ninguna solucion completa logra superarla nunca.
+    if (!current_sol.unassigned.empty()) {
+        regret2Insertion(current_sol);
+        best_sol = current_sol;
+    }
+
     double initial_d = current_sol.total_distance;
-    start_temp = -(0.10 * initial_d) / std::log(0.5);
+    start_temp = -(tau * initial_d) / std::log(0.5);
     double T = start_temp;
     int n_customers = inst.clients.size() - 1;
 
@@ -111,61 +119,101 @@ Solution ALNS::solve(int max_iters) {
     double curr_cost = cost(current_sol);
     double best_cost = cost(best_sol);
 
-    for (int iter = 1; iter <= max_iters; ++iter) {
-        Solution candidate = current_sol;
-        int q = q_distr(rng); // Grado de destruccion (cuantos clientes se busca eliminar)
+    int iter = 0;
+    while (iter < max_iters) {
+        // ================= BUCLE INTERNO: busqueda local =================
+        // Corre pares destroy/repair sobre la configuracion de rutas vigente
+        // hasta agotar 'no_improve_limit' iteraciones seguidas sin mejora.
+        int no_improve = 0;
 
-        // Seleccion de operadores
-        int d_idx = selectDestroyOp();
-        int r_idx = selectRepairOp();
+        while (no_improve < no_improve_limit && iter < max_iters) {
+            ++iter;
 
-        // r(d(x))
-        destroy_ops[d_idx](candidate, q);
-        repair_ops[r_idx](candidate);
+            Solution candidate = current_sol;
+            int q = q_distr(rng); // Grado de destruccion (cuantos clientes se busca eliminar)
 
-        // Evaluacion y scores
-        double score = w4; // por defecto, incluye candidato infactible
+            // Seleccion de operadores
+            int d_idx = selectDestroyOp();
+            int r_idx = selectRepairOp();
 
-        // cost() no penaliza clientes sin asignar (solo lo hace cost_phase1,
-        // usado en otra fase). Si el repair no logro reinsertar a todos
-        // (posible cuando el destroy elimina muchos clientes de golpe, p.ej.
-        // routeRemoval/removeSmallestRoute en instancias con capacidad/TW
-        // ajustados), la solucion es infactible y no debe competir por
-        // costo: se trata igual que cualquier rechazo (score=w4). De lo
-        // contrario cost() la ve mas barata (le faltan clientes) y la
-        // acepta, perdiendo clientes en cascada iteracion tras iteracion.
-        if (candidate.unassigned.empty()) {
-            double cand_cost = cost(candidate);
+            // r(d(x))
+            destroy_ops[d_idx](candidate, q);
+            repair_ops[r_idx](candidate);
 
-            if (cand_cost < best_cost) {
-                // Nuevo mejor global
-                best_sol = candidate;
-                current_sol = candidate;
-                curr_cost = cand_cost;
-                best_cost = cand_cost;
-                score = w1;
+            // Evaluacion y scores
+            double score = w4; // por defecto, incluye candidato infactible
+            bool improved = false;
+
+            // cost() no penaliza clientes sin asignar (solo lo hace cost_phase1,
+            // usado en otra fase). Si el repair no logro reinsertar a todos
+            // (posible cuando el destroy elimina muchos clientes de golpe, p.ej.
+            // routeRemoval/removeSmallestRoute en instancias con capacidad/TW
+            // ajustados), la solucion es infactible y no debe competir por
+            // costo: se trata igual que cualquier rechazo (score=w4). De lo
+            // contrario cost() la ve mas barata (le faltan clientes) y la
+            // acepta, perdiendo clientes en cascada iteracion tras iteracion.
+            if (candidate.unassigned.empty()) {
+                double cand_cost = cost(candidate);
+
+                if (cand_cost < best_cost) {
+                    // Nuevo mejor global
+                    best_sol = candidate;
+                    current_sol = candidate;
+                    curr_cost = cand_cost;
+                    best_cost = cand_cost;
+                    score = w1;
+                    improved = true;
+                }
+                else if (cand_cost < curr_cost) {
+                    // Nuevo mejor actual
+                    current_sol = candidate;
+                    curr_cost = cand_cost;
+                    score = w2;
+                    improved = true;
+                }
+                else if (accept(cand_cost, curr_cost, T)) {
+                    // Solucion aceptada
+                    current_sol = candidate;
+                    curr_cost = cand_cost;
+                    score = w3;
+                }
+                // else: rechazada, score = w4
             }
-            else if (cand_cost < curr_cost) {
-                // Nuevo mejor actual
-                current_sol = candidate;
-                curr_cost = cand_cost;
-                score = w2;
-            }
-            else if (accept(cand_cost, curr_cost, T)) {
-                // Solucion aceptada
-                current_sol = candidate;
-                curr_cost = cand_cost;
-                score = w3;
-            }
-            // else: rechazada, score = w4
+
+            // Acumulacion de scores + cierre de segmento
+            registerScore(d_idx, r_idx, score);
+            if (iter % segment_size == 0) updateWeightsSegment();
+
+            // Actualizacion de temperatura
+            T = T * cooling_rate;
+
+            no_improve = improved ? 0 : (no_improve + 1);
         }
 
-        // Acumulacion de scores + cierre de segmento
-        registerScore(d_idx, r_idx, score);
-        if (iter % segment_size == 0) updateWeightsSegment();
+        if (iter >= max_iters) break;
 
-        // Actualizacion de temperatura
-        T = T * cooling_rate;
+        // ================= BUCLE EXTERNO: perturbacion =================
+        // Reinicia desde el mejor global y cambia la configuracion estructural
+        // (elimina una ruta completa). La reinsercion decide si la flota
+        // restante absorbe a esos clientes (NV baja) o si hay que reabrir un
+        // vehiculo (misma NV, otra configuracion => diversificacion).
+        // Se acepta incondicionalmente como punto de partida del siguiente
+        // bucle interno: es la unica fuente de diversificacion del algoritmo
+        // una vez que la temperatura del SA ha caido.
+        current_sol = best_sol;
+        perturbRouteElimination(current_sol, perturb_k);
+        regret2Insertion(current_sol);
+
+        if (!current_sol.unassigned.empty()) {
+            // La reinsercion no cerro; no arrastramos una solucion incompleta.
+            current_sol = best_sol;
+        }
+
+        curr_cost = cost(current_sol);
+        if (curr_cost < best_cost) {
+            best_sol = current_sol;
+            best_cost = curr_cost;
+        }
     }
 
     return best_sol;

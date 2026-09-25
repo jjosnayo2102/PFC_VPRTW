@@ -258,3 +258,48 @@ void timeWindowRemoval(Solution& sol, int q) {
     sol.updateMetrics();
 }
 
+
+// ===== PERTURBACION DEL BUCLE EXTERNO (two-layer loop) =====
+// En el .md el bucle externo perturba la variable de decision estructural del
+// problema (el modo de un muelle) y el bucle interno optimiza la asignacion
+// bajo esa configuracion fija. En VRPTW la variable estructural equivalente es
+// el conjunto de rutas activas: perturbamos eliminando una ruta completa, para
+// que la reparacion posterior decida si sus clientes caben en la flota
+// restante (NV baja en 1) o si hay que reabrir un vehiculo (misma NV, pero
+// configuracion distinta => diversificacion).
+//
+// Se elige al azar entre las k rutas mas pequenias en vez de siempre la minima
+// (removeSmallestRoute) porque el bucle externo se aplica repetidamente sobre
+// best_sol: un operador determinista repetiria la misma perturbacion y el
+// bucle externo no diversificaria nada.
+void perturbRouteElimination(Solution& sol, int k) {
+    // Purga de cascarones [0,0] que dejan routeRemoval y compania: no cuentan
+    // en updateMetrics() pero si se acumulan en sol.routes y hacen mas lento
+    // cada barrido de la reparacion.
+    sol.routes.erase(
+        std::remove_if(sol.routes.begin(), sol.routes.end(),
+                       [](const Route& r) { return r.path.size() <= 2; }),
+        sol.routes.end());
+
+    if (sol.routes.size() <= 1) {
+        sol.updateMetrics();
+        return;
+    }
+
+    std::vector<std::pair<size_t, size_t>> active; // (tamanio, indice)
+    for (size_t r = 0; r < sol.routes.size(); ++r)
+        active.push_back({sol.routes[r].path.size(), r});
+
+    std::sort(active.begin(), active.end());
+
+    int limit = std::min<int>(k, static_cast<int>(active.size()));
+    std::uniform_int_distribution<int> distr(0, limit - 1);
+    size_t chosen = active[distr(rng)].second;
+
+    Route& route = sol.routes[chosen];
+    for (size_t i = 1; i < route.path.size() - 1; ++i)
+        sol.unassigned.push_back(route.path[i]);
+
+    sol.routes.erase(sol.routes.begin() + chosen);
+    sol.updateMetrics();
+}

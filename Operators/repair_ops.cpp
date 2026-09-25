@@ -1,5 +1,29 @@
 #include "operators.h"
 
+// Debe coincidir con VEHICLE_COST de cost() (solution.cpp).
+const double VEHICLE_OPEN_PENALTY = 10000.0;
+
+// Abre un vehiculo nuevo al final de la solucion.
+//
+// IMPRESCINDIBLE llamar a recalculate(): el constructor por defecto de Route
+// deja time_slacks = {0, 0} porque no tiene acceso a la instancia, y
+// evalInsertion valida el empuje del resto de la ruta con
+// "delay > wait_times[1] + time_slacks[1]". Sobre una ruta recien construida
+// esa condicion es "delay > 0", que es cierta para CUALQUIER cliente: la ruta
+// nueva rechazaba todas las inserciones y la reparacion era incapaz de abrir un
+// vehiculo. Consecuencia: el numero de vehiculos solo podia BAJAR (cuando un
+// destroy vaciaba una ruta y la reparacion reabsorbia a todos sus clientes en
+// las demas) y nunca subir, asi que la busqueda quedaba encerrada en el NV que
+// le daba la solucion inicial -- por eso ALNS y ALNS+Q-learning devolvian NV
+// exactamente identica instancia por instancia, y ~45% de las iteraciones se
+// desperdiciaban en candidatos que la reparacion no podia completar.
+// recalculate() fija time_slacks[1] = due_date(deposito), que es la holgura
+// real de una ruta vacia.
+static void openNewRoute(Solution& sol) {
+    sol.routes.push_back(Route());
+    sol.routes.back().recalculate(sol.inst);
+}
+
 bool evalInsertion(const Solution& sol, int client_id, const Route& route, size_t i, double& delta_cost) {
     int prev = route.path[i];
     int next = route.path[i + 1];
@@ -26,7 +50,16 @@ bool evalInsertion(const Solution& sol, int client_id, const Route& route, size_
     delta_cost = sol.inst.dist_mat[prev][client_id] + 
                  sol.inst.dist_mat[client_id][next] - 
                  sol.inst.dist_mat[prev][next];
-                 
+
+    // Jerarquia de objetivos (NV antes que TD): si la ruta destino esta vacia,
+    // esta insercion abre un vehiculo nuevo y debe costar lo mismo que en
+    // cost(). Los operadores de destruccion dejan cascarones [0,0] en
+    // sol.routes (routeRemoval) y sin esta penalizacion la reparacion los
+    // reabre en cuanto 2*d(0,i) < el mejor desvio disponible, aunque el
+    // criterio de aceptacion cobre 10000 por ese vehiculo. Reparacion y
+    // aceptacion deben optimizar la misma funcion objetivo.
+    if (route.path.size() == 2) delta_cost += VEHICLE_OPEN_PENALTY;
+
     return true;
 }
 
@@ -76,7 +109,7 @@ void greedyInsertion(Solution& sol){
                 break;
             }
             else
-                sol.routes.push_back(Route());
+                openNewRoute(sol);
         }
     }
 
@@ -148,7 +181,7 @@ void regret2Insertion(Solution& sol){
                 break;
             }
             else
-                sol.routes.push_back(Route());
+                openNewRoute(sol);
         }
     }
 
@@ -231,7 +264,7 @@ void regret3Insertion(Solution& sol){
                 break;
             }
             else
-                sol.routes.push_back(Route());
+                openNewRoute(sol);
         }
     }
 
@@ -287,7 +320,7 @@ void pGreedyInsertion(Solution& sol, double eta){
                 break;
             }
             else
-                sol.routes.push_back(Route());
+                openNewRoute(sol);
         }
     }
 
@@ -371,7 +404,7 @@ void greedyInsertionRelaxed(Solution& sol){
         }
         else {
             // Si incluso relajado no pudo (posiblemente por capacidad estricta), crea nueva
-            sol.routes.push_back(Route());
+            openNewRoute(sol);
         }
     }
     sol.updateMetrics();
@@ -435,7 +468,7 @@ void regret2InsertionRelaxed(Solution& sol){
             sol.unassigned.pop_back();
         }
         else {
-            sol.routes.push_back(Route());
+            openNewRoute(sol);
         }
     }
     sol.updateMetrics();
@@ -510,7 +543,7 @@ void regret3InsertionRelaxed(Solution& sol){
             sol.unassigned.pop_back();
         }
         else {
-            sol.routes.push_back(Route());
+            openNewRoute(sol);
         }
     }
     sol.updateMetrics();
@@ -558,7 +591,7 @@ void pGreedyInsertionRelaxed(Solution& sol, double eta){
             sol.unassigned.pop_back();
         }
         else {
-            sol.routes.push_back(Route());
+            openNewRoute(sol);
         }
     }
     sol.updateMetrics();
