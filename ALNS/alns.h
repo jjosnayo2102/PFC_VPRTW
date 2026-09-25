@@ -60,7 +60,20 @@ class ALNS {
         // Sin esto ambos metodos eran un unico bucle plano sin ningun mecanismo
         // de diversificacion, y quedaban clavados en el NV que les daba la
         // solucion inicial (misma NV exacta en los dos, en toda instancia).
-        static const int no_improve_limit = 20;  // t sintonizado en el .md
+        // t: iteraciones consecutivas sin mejora que agotan el bucle interno.
+        // El .md sintoniza t = 20, pero ahi el bucle interno es una busqueda
+        // local fina sobre la secuencia de camiones. Aqui un solo destroy
+        // elimina entre 10 y 40 de los 100 clientes, asi que la mayoria de las
+        // iteraciones no mejora y t = 20 se agota cada ~25 iteraciones: el
+        // bucle interno nunca alcanza a descender y el SA queda anulado.
+        // Medido sobre 10 instancias R/RC (3 semillas pareadas, 25k
+        // iteraciones), t = 750 frente a t = 20 deja el gap de NV del hibrido
+        // en 7.83% vs 12.83% y lo pone 5-2 arriba del clasico en comparacion
+        // directa. Se expresa como fraccion del presupuesto para que escale con
+        // max_iters (con 25000 iteraciones da exactamente los 750 medidos) y se
+        // acota por abajo con el valor del .md.
+        static constexpr double no_improve_fraction = 0.03;
+        static const int md_no_improve_limit = 20;
         static const int perturb_k = 3;
 
         void initOps();

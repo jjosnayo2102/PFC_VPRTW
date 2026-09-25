@@ -115,6 +115,10 @@ Solution ALNS_QLearning::solve(int max_iters, bool save_metrics) {
     // (mas dificiles) pesan mas que las mismas mejoras al principio.
     const double C = static_cast<double>(max_iters);
 
+    const int no_improve_limit =
+        std::max(md_no_improve_limit,
+                 static_cast<int>(no_improve_fraction * max_iters));
+
     double curr_cost = cost(current_sol);
     double best_cost = cost(best_sol);
 

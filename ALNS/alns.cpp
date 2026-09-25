@@ -116,6 +116,10 @@ Solution ALNS::solve(int max_iters) {
     int q_max = std::max(q_min + 1, static_cast<int>(0.4 * n_customers));
     std::uniform_int_distribution<int> q_distr(q_min, q_max);
 
+    const int no_improve_limit =
+        std::max(md_no_improve_limit,
+                 static_cast<int>(no_improve_fraction * max_iters));
+
     double curr_cost = cost(current_sol);
     double best_cost = cost(best_sol);
 
